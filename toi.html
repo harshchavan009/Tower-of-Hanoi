@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tower of Hanoi - Real Time Disks</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .tower {
+      position: relative;
+      width: 20px;
+      height: 250px;
+      background: linear-gradient(to right, #8B4513, #A0522D);
+      border-radius: 10px 10px 0 0;
+      margin: 0 50px;
+      cursor: pointer;
+    }
+
+    .base {
+      position: absolute;
+      bottom: -20px;
+      left: -40px;
+      width: 100px;
+      height: 20px;
+      background: linear-gradient(to right, #8B4513, #A0522D);
+      border-radius: 5px;
+    }
+
+    .disk {
+      position: absolute;
+      height: 30px;
+      border-radius: 15px;
+      transition: all 0.5s ease;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 14px;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+      user-select: none;
+    }
+
+    .disk.selected {
+      box-shadow: 0 0 15px 5px #FFD700, 0 4px 6px rgba(0, 0, 0, 0.3);
+      transform: translateY(-10px);
+    }
+
+    .tower-label {
+      text-align: center;
+      margin-top: 10px;
+      font-weight: bold;
+      font-size: 18px;
+      color: #2D3748;
+    }
+
+    .tower-container {
+      display: flex;
+      justify-content: center;
+      gap: 100px;
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen font-sans">
+  <div class="container mx-auto px-4 py-8 text-center">
+    <h1 class="text-4xl font-bold text-gray-800 mb-4">Tower of Hanoi - Real Time Disks</h1>
+
+    <label for="diskCount" class="block mb-2 font-medium">Number of Disks (3-8):</label>
+    <input type="number" id="diskCount" min="3" max="8" value="4" class="mb-4 px-3 py-2 border rounded" />
+
+    <div>
+      <button onclick="startGame()" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 mr-2">Start Game</button>
+      <button onclick="resetGame()" class="px-6 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">Reset</button>
+    </div>
+
+    <div id="moveCounter" class="mt-4 text-xl font-semibold">Moves: 0</div>
+
+    <div class="tower-container">
+      <div class="flex flex-col items-center">
+        <div class="tower" id="towerA" onclick="selectTower('A')">
+          <div class="base"></div>
+        </div>
+        <div class="tower-label">Tower A</div>
+      </div>
+      <div class="flex flex-col items-center">
+        <div class="tower" id="towerB" onclick="selectTower('B')">
+          <div class="base"></div>
+        </div>
+        <div class="tower-label">Tower B</div>
+      </div>
+      <div class="flex flex-col items-center">
+        <div class="tower" id="towerC" onclick="selectTower('C')">
+          <div class="base"></div>
+        </div>
+        <div class="tower-label">Tower C</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let moves = 0;
+    let selectedTower = null;
+    let gameState = { A: [], B: [], C: [] };
+    let isGameStarted = false;
+
+    const diskColors = [
+      "linear-gradient(135deg, #FF6B6B, #EE5A24)",
+      "linear-gradient(135deg, #48DBFB, #17C0EB)",
+      "linear-gradient(135deg, #7DEDFF, #67E6DC)",
+      "linear-gradient(135deg, #32FF7E, #3AE374)",
+      "linear-gradient(135deg, #FF9FF3, #FD79A8)",
+      "linear-gradient(135deg, #FEA47F, #F97F51)",
+      "linear-gradient(135deg, #CAD3C8, #A4B0BE)",
+      "linear-gradient(135deg, #D6A2E8, #82589F)",
+    ];
+
+    function startGame() {
+      resetGame();
+      const diskCount = parseInt(document.getElementById("diskCount").value) || 4;
+      if (diskCount < 3 || diskCount > 8) {
+        alert("Please choose between 3-8 disks");
+        return;
+      }
+
+      for (let i = diskCount; i >= 1; i--) {
+        gameState["A"].push(i);
+      }
+
+      isGameStarted = true;
+      moves = 0;
+      updateMoveCounter();
+      renderGame();
+    }
+
+    function resetGame() {
+      moves = 0;
+      selectedTower = null;
+      gameState = { A: [], B: [], C: [] };
+      isGameStarted = false;
+
+      ["A", "B", "C"].forEach(tower => {
+        const towerEl = document.getElementById("tower" + tower);
+        Array.from(towerEl.children).forEach(child => {
+          if (!child.classList.contains("base")) {
+            towerEl.removeChild(child);
+          }
+        });
+        towerEl.classList.remove("selected");
+      });
+
+      updateMoveCounter();
+    }
+
+    function updateMoveCounter() {
+      document.getElementById("moveCounter").textContent = `Moves: ${moves}`;
+    }
+
+    function renderGame() {
+      ["A", "B", "C"].forEach(tower => {
+        const towerEl = document.getElementById("tower" + tower);
+        Array.from(towerEl.children).forEach(child => {
+          if (!child.classList.contains("base")) {
+            towerEl.removeChild(child);
+          }
+        });
+
+        const disks = gameState[tower];
+        disks.forEach((diskSize, index) => {
+          const disk = document.createElement("div");
+          disk.className = "disk";
+          disk.style.background = diskColors[diskSize - 1];
+          disk.style.width = `${20 + diskSize * 25}px`;
+          disk.style.bottom = `${index * 30 + 20}px`;
+          disk.style.left = `${-((20 + diskSize * 25) - 20) / 2}px`;
+          disk.textContent = diskSize;
+          disk.dataset.size = diskSize;
+          towerEl.appendChild(disk);
+        });
+      });
+
+      checkWinCondition();
+    }
+
+    function selectTower(tower) {
+      if (!isGameStarted) return;
+
+      if (!selectedTower) {
+        if (gameState[tower].length === 0) return; 
+        selectedTower = tower;
+        document.getElementById("tower" + tower).classList.add("selected");
+      } else {
+        if (selectedTower === tower) {
+  
+          document.getElementById("tower" + tower).classList.remove("selected");
+          selectedTower = null;
+          return;
+        }
+        moveDisk(selectedTower, tower);
+        document.getElementById("tower" + selectedTower).classList.remove("selected");
+        selectedTower = null;
+      }
+    }
+
+    function moveDisk(fromTower, toTower) {
+      const fromDisks = gameState[fromTower];
+      const toDisks = gameState[toTower];
+
+      if (fromDisks.length === 0) return;
+
+      const movingDisk = fromDisks[fromDisks.length - 1];
+      const topToDisk = toDisks[toDisks.length - 1];
+
+      if (!topToDisk || movingDisk < topToDisk) {
+        fromDisks.pop();
+        toDisks.push(movingDisk);
+        moves++;
+        updateMoveCounter();
+        animateDiskMove(movingDisk, fromTower, toTower);
+      } else {
+        alert("Invalid move! Cannot place larger disk on smaller disk.");
+      }
+    }
+
+    function animateDiskMove(diskSize, fromTower, toTower) {
+      const fromTowerEl = document.getElementById("tower" + fromTower);
+      const toTowerEl = document.getElementById("tower" + toTower);
+      const disksInFrom = Array.from(fromTowerEl.children).filter(c => c.classList.contains("disk"));
+      const diskEl = disksInFrom.find(d => parseInt(d.dataset.size) === diskSize);
+
+      if (!diskEl) return;
+      fromTowerEl.removeChild(diskEl);
+      toTowerEl.appendChild(diskEl);
+
+      const toDisks = gameState[toTower];
+      const index = toDisks.length - 1;
+
+      diskEl.style.width = `${20 + diskSize * 25}px`;
+      diskEl.style.bottom = `${index * 30 + 20}px`;
+      diskEl.style.left = `${-((20 + diskSize * 25) - 20) / 2}px`;
+    }
+
+    function checkWinCondition() {
+      const diskCount = parseInt(document.getElementById("diskCount").value) || 4;
+      if (gameState["C"].length === diskCount) {
+        alert(`Congratulations! You solved the puzzle in ${moves} moves.`);
+        isGameStarted = false;
+      }
+    }
+    function saveGameScore(score) {
+    let user = localStorage.getItem("loggedInUser");
+    if (!user) user = "Guest";
+
+    let gameName = "Tower of Hanoi";
+    let date = new Date().toLocaleString();
+
+    let newRecord = {
+        user: user,
+        game: gameName,
+        score: score,
+        time: date
+    };
+    let gameRecords = JSON.parse(localStorage.getItem("gameRecords")) || [];
+    gameRecords.push(newRecord);
+    localStorage.setItem("gameRecords", JSON.stringify(gameRecords));
+}
+  </script>
+</body>
+</html>
